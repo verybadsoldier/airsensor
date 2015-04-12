@@ -77,14 +77,24 @@ struct usb_device* find_device(int vendor, int product) {
 	return NULL;
 }
  
+ void exec_user_command(const char* cmd, int value) {
+   char execBuff[1024];
+   sprintf(execBuff, cmd, value);
+   
+   // ignore return code and just continue
+   system(execBuff);
+ }
+ 
 int main(int argc, char *argv[])
 {
 	int ret, vendor, product, debug, counter, one_read;
 	int print_voc_only;
 	struct usb_device *dev;
 	char buf[1000];
+	char cmd[1000] = "";
 	// char str[5];
 	
+	int interval = 10;
 	debug = 0;
 	print_voc_only = 0;
 	one_read = 0; 	
@@ -108,10 +118,31 @@ int main(int argc, char *argv[])
 			case 'o':
 				one_read = 1;
 				break;
-			
+    		
+			case 'i':
+				interval = atoi(argv[2]);
+				
+				// shift one extra parameter
+				++argv;
+				--argc;
+				break;
+		
 			case 'h':
 				help();
+				break;
 				
+			case 'c':
+				if (argc < 2) {
+					printf("Missing argument for parameter -c");
+					exit(1);
+				}
+
+				strncpy(cmd, argv[2], 1000);
+
+				// shift one extra parameter
+				++argv;
+				--argc;
+				break;
 		}
 		
 		++argv;
@@ -262,12 +293,15 @@ int main(int argc, char *argv[])
 			}
 		}
 		
+		if (strlen(cmd) > 0)
+			exec_user_command(cmd, voc);
+
 		// If one read, then exit
 		if (one_read == 1)
 			exit(0);
 		
 		// Wait for next request for data
-		sleep(10);
+		sleep(interval);
 	
 	}
  
