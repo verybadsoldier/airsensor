@@ -38,6 +38,9 @@ void help() {
 	printf("-v = Print VOC value only, nothing returns if value out of range (450-2000)\n");
 	printf("-o = One value and then exit\n");
 	printf("-h = Help, this printout\n");
+	printf("-c <cmd> = custom shell command to be executed after each read\n");
+	printf("-e <n> = exit after USB read failed n times\n");
+	printf("-i <secs> = pause between poll intervals (default: 10)\n");
 	exit(0);
 	
 }
@@ -102,6 +105,8 @@ int main(int argc, char *argv[])
 	vendor = 0x03eb;
 	product = 0x2013; 
 	dev = NULL;
+	int quit_on_error = 0;
+	int error_counter = 0;
 	
 	while ((argc > 1) && (argv[1][0] == '-'))
 	{
@@ -117,6 +122,13 @@ int main(int argc, char *argv[])
 			
 			case 'o':
 				one_read = 1;
+				break;
+    		
+			case 'e':
+				quit_on_error =atoi(argv[2]);
+				
+				++argv;
+				--argc;
 				break;
     		
 			case 'i':
@@ -273,17 +285,20 @@ int main(int argc, char *argv[])
 		
 		if (debug == 1)
 			printout("DEBUG: Return code from USB read: ", ret);
- 		
- 		// According to AppliedSensor specifications the output range is between 450 and 2000
- 		// So only printout values between this range
- 		
-		if ( voc >= 450 && voc <= 2001) {
+		
+    printf("FOC: %d\n", voc);
+		if (voc < 3500) {
 			if (print_voc_only == 1) {
 				printf("%d\n", voc);
 			} else {
 				printf("%04d-%02d-%02d %02d:%02d:%02d, ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 				printf("VOC: %d, RESULT: OK\n", voc); 	
 			}
+		
+			if (strlen(cmd) > 0)
+				exec_user_command(cmd, voc);
+
+				error_counter = 0;
 		} else {
 			if (print_voc_only == 1) {
 				printf("0\n");
@@ -291,11 +306,13 @@ int main(int argc, char *argv[])
 				printf("%04d-%02d-%02d %02d:%02d:%02d, ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 				printf("VOC: %d, RESULT: Error value out of range\n", voc); 	
 			}
+			++error_counter;
+
+			if (quit_on_error > 0 && quit_on_error <= error_counter) {
+				exit(-1);
+			}
 		}
 		
-		if (strlen(cmd) > 0)
-			exec_user_command(cmd, voc);
-
 		// If one read, then exit
 		if (one_read == 1)
 			exit(0);
