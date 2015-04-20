@@ -41,6 +41,7 @@ void help() {
 	printf("-c <cmd> = custom shell command to be executed after each read\n");
 	printf("-e <n> = exit after USB read failed n times\n");
 	printf("-i <secs> = pause between poll intervals (default: 10)\n");
+	printf("-r ignore errors (just process all values)\n");
 	exit(0);
 	
 }
@@ -107,6 +108,7 @@ int main(int argc, char *argv[])
 	dev = NULL;
 	int quit_on_error = 0;
 	int error_counter = 0;
+	int ignore_errors = 0;
 	
 	while ((argc > 1) && (argv[1][0] == '-'))
 	{
@@ -122,6 +124,10 @@ int main(int argc, char *argv[])
 			
 			case 'o':
 				one_read = 1;
+				break;
+    		
+			case 'r':
+				ignore_errors = 1;
 				break;
     		
 			case 'e':
@@ -287,7 +293,7 @@ int main(int argc, char *argv[])
 			printout("DEBUG: Return code from USB read: ", ret);
 		
     printf("FOC: %d\n", voc);
-		if (voc < 3500) {
+		if (ignore_errors || voc < 3500) {
 			if (print_voc_only == 1) {
 				printf("%d\n", voc);
 			} else {
