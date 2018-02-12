@@ -1,0 +1,14 @@
+[Unit]
+Description=iAQ Air Sensor Service
+Documentation=
+
+[Service]
+Type=simple
+User=fhem
+Restart=always
+WorkingDirectory=/opt/airsensor
+ExecStart=/opt/airsensor/minion.sh
+StandardOutput=null
+
+[Install]
+WantedBy=multi-user.target
